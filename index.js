@@ -1,5 +1,5 @@
 const express = require("express");
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const cors = require("cors")
 const app = express();
@@ -31,11 +31,53 @@ async function run() {
 
     const usersManagement = client.db("managementDB").collection("users")
 
+
+    // users get endpoint
+    app.get("/users", async(req, res)=>{
+      const cursor = usersManagement.find();
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+
+    // get a single user endpoint
+    app.get("/users/:id", async(req, res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await usersManagement.findOne(query);
+      res.send(result)
+    })
     // users post endpoint
     app.post("/users", async(req, res)=>{
         const user = req.body;
         const result = await usersManagement.insertOne(user)
         res.send(result)
+    })
+
+    // update a user. put endpoint
+    app.put("/users/:id", async(req, res)=>{
+      const id = req.params.id;
+      const user = req.body
+      const filter = {_id: new ObjectId(id)};
+      const options = {upsert: true}
+      const updatedUser = {
+        $set: {
+          name: user.name,
+          email: user.email,
+          gender: user.gender,
+          role: user.role,
+          password: user.password
+        }
+      }
+      const result = await usersManagement.updateOne(filter, updatedUser, options)
+      res.send(result)
+    })
+
+    // users delete endpoint
+    app.delete("/users/:id", async(req, res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await usersManagement.deleteOne(query)
+      res.send(result)
     })
 
     // Send a ping to confirm a successful connection
